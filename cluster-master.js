@@ -6,6 +6,7 @@ var cluster = require("cluster")
 , path = require("path")
 , clusterSize = 0
 , os = require("os")
+, onmessage
 
 exports = module.exports = clusterMaster
 exports.restart = restart
@@ -31,6 +32,8 @@ function clusterMaster (config) {
 
   cluster._clusterMaster = module.exports
 
+  onmessage = config.onmessage
+
   clusterSize = config.size || os.cpus().length
 
   var masterConf = { exec: path.resolve(config.exec) }
@@ -54,7 +57,7 @@ function forkListener () {
   cluster.on("fork", function (worker) {
     var id = worker.uniqueID
     console.error("Worker %j setting up", id)
-    worker.on("message", onmessage)
+    if (onmessage) worker.on("message", onmessage)
     var disconnectTimer
 
     worker.on("exit", function () {

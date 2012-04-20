@@ -31,7 +31,7 @@ clusterMaster({ exec: "worker.js" // script to run
               , args: [ "--deep", "doop" ]
               , silent: true
               , signals: false
-              , onmessage: function (msg) {
+              , onMessage: function (msg) {
                   console.error("Message from %s %j"
                                , this.uniqueID
                                , msg)
@@ -85,7 +85,7 @@ The `exec`, `env`, `argv`, and `silent` configs are passed to the
   * `SIGHUP` - restart
   * `SIGINT` - quit
   * `SIGKILL` - quitHard
-* `onmessage` - Method that gets called when workers send a message to
+* `onMessage` - Method that gets called when workers send a message to
   the parent.  Called in the context of the worker, so you can reply by
   looking at `this`.
 

@@ -32,7 +32,7 @@ function clusterMaster (config) {
 
   cluster._clusterMaster = module.exports
 
-  onmessage = config.onmessage
+  onmessage = config.onMessage || config.onmessage
 
   clusterSize = config.size || os.cpus().length
 

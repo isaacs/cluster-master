@@ -9,6 +9,6 @@
   },
   "main": "cluster-master.js",
   "engines": {
-    "node": ">=0.7.8"
+    "node": ">=0.7.7"
   }
 }

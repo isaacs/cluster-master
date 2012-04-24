@@ -55,18 +55,27 @@ function clusterMaster (config) {
 
 function forkListener () {
   cluster.on("fork", function (worker) {
+    worker.birth = Date.now()
     var id = worker.uniqueID
     console.error("Worker %j setting up", id)
     if (onmessage) worker.on("message", onmessage)
     var disconnectTimer
 
     worker.on("exit", function () {
+      clearTimeout(disconnectTimer)
+
       if (!worker.suicide) {
         console.error("Worker %j exited abnormally", id)
+        // don't respawn right away if it's a very fast failure.
+        // otherwise server crashes are hard to detect from monitors.
+        if (Date.now() - worker.birth < 2000) {
+          console.error("Worker %j died too quickly, not respawning.", id)
+          return
+        }
       } else {
         console.error("Worker %j exited", id)
       }
-      clearTimeout(disconnectTimer)
+
       if (Object.keys(cluster.workers).length < clusterSize) {
         resize()
       }

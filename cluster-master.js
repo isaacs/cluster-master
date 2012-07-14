@@ -56,7 +56,7 @@ function clusterMaster (config) {
 function forkListener () {
   cluster.on("fork", function (worker) {
     worker.birth = Date.now()
-    var id = worker.uniqueID
+    var id = worker.id
     console.error("Worker %j setting up", id)
     if (onmessage) worker.on("message", onmessage)
     var disconnectTimer
@@ -68,7 +68,8 @@ function forkListener () {
         console.error("Worker %j exited abnormally", id)
         // don't respawn right away if it's a very fast failure.
         // otherwise server crashes are hard to detect from monitors.
-        if (Date.now() - worker.birth < 2000) {
+        var age = Date.now() - worker.birth
+        if (age < 2000) {
           console.error("Worker %j died too quickly, not respawning.", id)
           return
         }
@@ -94,11 +95,12 @@ function forkListener () {
 
 function restart (cb) {
   if (restarting) {
-    console.error("Already restarting.  Cannot restart yet.", new Error().stack)
+    console.error("Already restarting.  Cannot restart yet.")
     return
   }
 
   restarting = true
+
   // graceful restart.
   // all the existing workers get killed, and this
   // causes new ones to be spawned.  If there aren't
@@ -111,7 +113,8 @@ function restart (cb) {
 
   // if we're resizing, then just kill off a few.
   if (reqs !== 0) {
-    console.error('resize %d -> %d, change = %d', current.length, clusterSize, reqs)
+    console.error('resize %d -> %d, change = %d',
+                  current.length, clusterSize, reqs)
 
     return resize(clusterSize, function () {
       console.error('resize cb')
@@ -136,16 +139,20 @@ function restart (cb) {
     , worker = cluster.workers[id]
 
     if (quitting) {
-      if (worker) worker.disconnect()
+      if (worker && worker.process.connected) {
+        worker.disconnect()
+      }
       return graceful()
     }
 
     // start a new one. if it lives for 2 seconds, kill the worker.
     if (first) {
-      cluster.once('fork', function (newbie) {
+      cluster.once('listening', function (newbie) {
         var timer = setTimeout(function () {
           newbie.removeListener('exit', skeptic)
-          worker.disconnect()
+          if (worker && worker.process.connected) {
+            worker.disconnect()
+          }
           graceful()
         }, 2000)
         newbie.on('exit', skeptic)
@@ -156,10 +163,10 @@ function restart (cb) {
         }
       })
     } else {
-      cluster.once('fork', function (newbie) {
-        newbie.once('listening', function () {
-          if (worker) worker.disconnect()
-        })
+      cluster.once('listening', function (newbie) {
+        if (worker && worker.process.connected) {
+          worker.disconnect()
+        }
       })
       graceful()
     }
@@ -173,7 +180,6 @@ function restart (cb) {
 var resizing = false
 function resize (n, cb) {
   if (resizing) {
-    console.error('already resizing, cannot resize now')
     return cb && cb()
   }
 
@@ -202,13 +208,15 @@ function resize (n, cb) {
   // make us have the right number of them.
   if (req > 0) while (req -- > 0) {
     console.error('resizing up', req)
-    cluster.once('fork', then())
+    cluster.once('listening', then())
     cluster.fork()
   } else for (var i = clusterSize; i < c; i ++) {
     var worker = cluster.workers[current[i]]
     console.error('resizing down', current[i])
     worker.once('exit', then())
-    worker.disconnect()
+    if (worker && worker.process.connected) {
+      worker.disconnect()
+    }
   }
 }
 

@@ -10,12 +10,30 @@ var cluster = require("cluster")
 , repl = require('repl')
 , net = require('net')
 , fs = require('fs')
+, util = require('util')
 
 exports = module.exports = clusterMaster
 exports.restart = restart
 exports.resize = resize
 exports.quitHard = quitHard
 exports.quit = quit
+
+var debugStreams = {}
+function debug () {
+  console.error.apply(console, arguments)
+
+  var msg = util.format.apply(util, arguments)
+  Object.keys(debugStreams).forEach(function (s) {
+    try {
+      // if the write fails, just remove it.
+      debugStreams[s].write(msg + '\n')
+      if (debugStreams[s].repl) debugStreams[s].repl.displayPrompt()
+    } catch (e) {
+      delete debugStreams[s]
+    }
+  })
+}
+
 
 function clusterMaster (config) {
   if (typeof config === "string") config = { exec: config }
@@ -53,24 +71,41 @@ function clusterMaster (config) {
   forkListener()
 
   // now make it the right size
-  console.error('resize and then setup repl')
+  debug('resize and then setup repl')
   resize(setupRepl)
 }
 
+function select (field) {
+  return Object.keys(cluster.workers).map(function (k) {
+    return [k, cluster.workers[k][field]]
+  }).reduce(function (set, kv) {
+    set[kv[0]] = kv[1]
+    return set
+  }, {})
+}
+
 function setupRepl () {
-  console.error('setup repl')
+  debug('setup repl')
   var socket = path.resolve('cluster-master-socket')
   var connections = 0
   fs.unlink(socket, function (er) {
     if (er && er.code !== 'ENOENT') throw er
+    var sockId = 0
     net.createServer(function (sock) {
       connections ++
+      replEnded = false
+
+      sock.id = sockId ++
+      debugStreams['repl-' + sockId] = sock
+
+      sock.write('Starting repl #' + sock.id)
       var r = repl.start({
-        prompt: 'ClusterMaster ' + process.pid + '> ',
+        prompt: 'ClusterMaster ' + process.pid + ' ' + sock.id + '> ',
         input: sock,
         output: sock,
         terminal: true,
-        useGlobal: false
+        useGlobal: false,
+        ignoreUndefined: true
       })
       var context = {
         repl: r,
@@ -84,6 +119,26 @@ function setupRepl () {
         get connections () {
           return connections
         },
+        get workers () {
+          var p = select('pid')
+          var s = select('state')
+          var a = select('age')
+          return Object.keys(cluster.workers).map(function (k) {
+            return {id: k, pid: p[k], state: s[k], age: a[k] }
+          })
+        },
+        select: select,
+        get pids () {
+          return select('pid')
+        },
+        get ages () {
+          return select('age')
+        },
+        get states () {
+          return select('state')
+        },
+        // like 'wall'
+        debug: debug,
         sock: sock
       }
       var desc = Object.getOwnPropertyNames(context).map(function (n) {
@@ -94,13 +149,28 @@ function setupRepl () {
       }, {})
       Object.defineProperties(r.context, desc)
 
-      console.error('context', r.context)
+      sock.repl = r
+
       r.on('end', function () {
         connections --
-        sock.end()
+        replEnded = true
+        if (!ended) sock.end()
       })
+
+      sock.on('end', end)
+      sock.on('close', end)
+      sock.on('error', end)
+
+      ended = false
+      function end () {
+        if (ended) return
+        ended = true
+        if (!replEnded) r.rli.close()
+        delete debugStreams['repl-' + sockId]
+      }
+
     }).listen(socket, function () {
-      console.error('ClusterMaster repl listening on '+socket)
+      debug('ClusterMaster repl listening on '+socket)
     })
   })
 }
@@ -108,8 +178,12 @@ function setupRepl () {
 function forkListener () {
   cluster.on("fork", function (worker) {
     worker.birth = Date.now()
+    Object.defineProperty(worker, 'age', { get: function () {
+      return Date.now() - this.birth
+    }, enumerable: true, configurable: true })
+    worker.pid = worker.process.pid
     var id = worker.id
-    console.error("Worker %j setting up", id)
+    debug("Worker %j setting up", id)
     if (onmessage) worker.on("message", onmessage)
     var disconnectTimer
 
@@ -117,16 +191,15 @@ function forkListener () {
       clearTimeout(disconnectTimer)
 
       if (!worker.suicide) {
-        console.error("Worker %j exited abnormally", id)
+        debug("Worker %j exited abnormally", id)
         // don't respawn right away if it's a very fast failure.
         // otherwise server crashes are hard to detect from monitors.
-        var age = Date.now() - worker.birth
-        if (age < 2000) {
-          console.error("Worker %j died too quickly, not respawning.", id)
+        if (worker.age < 2000) {
+          debug("Worker %j died too quickly, not respawning.", id)
           return
         }
       } else {
-        console.error("Worker %j exited", id)
+        debug("Worker %j exited", id)
       }
 
       if (Object.keys(cluster.workers).length < clusterSize && !resizing) {
@@ -135,10 +208,10 @@ function forkListener () {
     })
 
     worker.on("disconnect", function () {
-      console.error("Worker %j disconnect", id)
+      debug("Worker %j disconnect", id)
       // give it 1 second to shut down gracefully, or kill
       disconnectTimer = setTimeout(function () {
-        console.error("Worker %j, forcefully killing", id)
+        debug("Worker %j, forcefully killing", id)
         worker.process.kill("SIGKILL")
       }, 5000)
     })
@@ -147,7 +220,7 @@ function forkListener () {
 
 function restart (cb) {
   if (restarting) {
-    console.error("Already restarting.  Cannot restart yet.")
+    debug("Already restarting.  Cannot restart yet.")
     return
   }
 
@@ -165,11 +238,11 @@ function restart (cb) {
 
   // if we're resizing, then just kill off a few.
   if (reqs !== 0) {
-    console.error('resize %d -> %d, change = %d',
+    debug('resize %d -> %d, change = %d',
                   current.length, clusterSize, reqs)
 
     return resize(clusterSize, function () {
-      console.error('resize cb')
+      debug('resize cb')
       length = clusterSize
       graceful()
     })
@@ -179,9 +252,9 @@ function restart (cb) {
   // new one to spawn before moving on.
   graceful()
   function graceful () {
-    console.error("graceful %d of %d", i, length)
+    debug("graceful %d of %d", i, length)
     if (i >= current.length) {
-      console.error("graceful completion")
+      debug("graceful completion")
       restarting = false
       return cb && cb()
     }
@@ -209,7 +282,7 @@ function restart (cb) {
         }, 2000)
         newbie.on('exit', skeptic)
         function skeptic () {
-          console.error('New worker died quickly. Aborting restart.')
+          debug('New worker died quickly. Aborting restart.')
           restarting = false
           clearTimeout(timer)
         }
@@ -261,12 +334,12 @@ function resize (n, cb) {
 
   // make us have the right number of them.
   if (req > 0) while (req -- > 0) {
-    console.error('resizing up', req)
+    debug('resizing up', req)
     cluster.once('listening', then())
     cluster.fork()
   } else for (var i = clusterSize; i < c; i ++) {
     var worker = cluster.workers[current[i]]
-    console.error('resizing down', current[i])
+    debug('resizing down', current[i])
     worker.once('exit', then())
     if (worker && worker.process.connected) {
       worker.disconnect()
@@ -285,7 +358,7 @@ function quitHard () {
 
 function quit () {
   if (quitting) {
-    console.error("Forceful shutdown")
+    debug("Forceful shutdown")
     // last ditch effort to force-kill all workers.
     Object.keys(cluster.workers).forEach(function (id) {
       var w = cluster.workers[id]
@@ -294,11 +367,11 @@ function quit () {
     process.exit(1)
   }
 
-  console.error("Graceful shutdown...")
+  debug("Graceful shutdown...")
   clusterSize = 0
   quitting = true
   restart(function () {
-    console.error("Graceful shutdown successful")
+    debug("Graceful shutdown successful")
     process.exit(0)
   })
 }

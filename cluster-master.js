@@ -7,6 +7,9 @@ var cluster = require("cluster")
 , clusterSize = 0
 , os = require("os")
 , onmessage
+, repl = require('repl')
+, net = require('net')
+, fs = require('fs')
 
 exports = module.exports = clusterMaster
 exports.restart = restart
@@ -50,7 +53,56 @@ function clusterMaster (config) {
   forkListener()
 
   // now make it the right size
-  resize()
+  console.error('resize and then setup repl')
+  resize(setupRepl)
+}
+
+function setupRepl () {
+  console.error('setup repl')
+  var socket = path.resolve('cluster-master-socket')
+  var connections = 0
+  fs.unlink(socket, function (er) {
+    if (er && er.code !== 'ENOENT') throw er
+    net.createServer(function (sock) {
+      connections ++
+      var r = repl.start({
+        prompt: 'ClusterMaster ' + process.pid + '> ',
+        input: sock,
+        output: sock,
+        terminal: true,
+        useGlobal: false
+      })
+      var context = {
+        repl: r,
+        resize: resize,
+        restart: restart,
+        quit: quit,
+        cluster: cluster,
+        get size () {
+          return clusterSize
+        },
+        get connections () {
+          return connections
+        },
+        sock: sock
+      }
+      var desc = Object.getOwnPropertyNames(context).map(function (n) {
+        return [n, Object.getOwnPropertyDescriptor(context, n)]
+      }).reduce(function (set, kv) {
+        set[kv[0]] = kv[1]
+        return set
+      }, {})
+      Object.defineProperties(r.context, desc)
+
+      console.error('context', r.context)
+      r.on('end', function () {
+        connections --
+        sock.end()
+      })
+    }).listen(socket, function () {
+      console.error('ClusterMaster repl listening on '+socket)
+    })
+  })
 }
 
 function forkListener () {
@@ -179,6 +231,8 @@ function restart (cb) {
 
 var resizing = false
 function resize (n, cb) {
+  if (typeof n === 'function') cb = n, n = clusterSize
+
   if (resizing) {
     return cb && cb()
   }

@@ -87,6 +87,10 @@ function select (field) {
 function setupRepl () {
   debug('setup repl')
   var socket = path.resolve('cluster-master-socket')
+  if (process.env.CLUSTER_MASTER_REPL) {
+    socket = process.env.CLUSTER_MASTER_REPL
+    if (!isNaN(socket)) socket = +socket
+  }
   var connections = 0
   fs.unlink(socket, function (er) {
     if (er && er.code !== 'ENOENT') throw er

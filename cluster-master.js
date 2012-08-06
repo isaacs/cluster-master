@@ -92,8 +92,17 @@ function setupRepl () {
     if (!isNaN(socket)) socket = +socket
   }
   var connections = 0
-  fs.unlink(socket, function (er) {
-    if (er && er.code !== 'ENOENT') throw er
+
+  if (typeof socket === 'string') {
+    fs.unlink(socket, function (er) {
+      if (er && er.code !== 'ENOENT') throw er
+      startRepl()
+    })
+  } else {
+    startRepl()
+  }
+
+  function startRepl () {
     var sockId = 0
     net.createServer(function (sock) {
       connections ++
@@ -176,7 +185,7 @@ function setupRepl () {
     }).listen(socket, function () {
       debug('ClusterMaster repl listening on '+socket)
     })
-  })
+  }
 }
 
 function forkListener () {

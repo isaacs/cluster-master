@@ -1,3 +1,4 @@
+[![build status](https://secure.travis-ci.org/isaacs/cluster-master.png)](http://travis-ci.org/isaacs/cluster-master)
 # cluster-master
 
 A module for taking advantage of the built-in `cluster` module in node

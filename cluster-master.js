@@ -60,6 +60,7 @@ function clusterMaster (config) {
   var masterConf = { exec: path.resolve(config.exec) }
   if (config.silent) masterConf.silent = true
   if (config.env) masterConf.env = config.env
+  if (config.args) masterConf.args = config.args
 
   cluster.setupMaster(masterConf)
 

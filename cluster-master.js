@@ -5,6 +5,7 @@ var cluster = require("cluster")
 , restarting = false
 , path = require("path")
 , clusterSize = 0
+, env
 , os = require("os")
 , onmessage
 , repl = require('repl')
@@ -57,9 +58,10 @@ function clusterMaster (config) {
 
   clusterSize = config.size || os.cpus().length
 
+  env = config.env
+
   var masterConf = { exec: path.resolve(config.exec) }
   if (config.silent) masterConf.silent = true
-  if (config.env) masterConf.env = config.env
 
   cluster.setupMaster(masterConf)
 
@@ -309,7 +311,7 @@ function restart (cb) {
       graceful()
     }
 
-    cluster.fork()
+    cluster.fork(env)
   }
 }
 
@@ -349,7 +351,7 @@ function resize (n, cb) {
   if (req > 0) while (req -- > 0) {
     debug('resizing up', req)
     cluster.once('listening', then())
-    cluster.fork()
+    cluster.fork(env)
   } else for (var i = clusterSize; i < c; i ++) {
     var worker = cluster.workers[current[i]]
     debug('resizing down', current[i])

@@ -141,7 +141,7 @@ function setupRepl () {
           var s = select('state')
           var a = select('age')
           return Object.keys(cluster.workers).map(function (k) {
-            return {id: k, pid: p[k], state: s[k], age: a[k] }
+            return new Worker({ id: k, pid: p[k], state: s[k], age: a[k] })
           })
         },
         select: select,
@@ -191,6 +191,22 @@ function setupRepl () {
     })
   }
 }
+
+function Worker (d) {
+  this.id = d.id
+  this.pid = d.pid
+  this.state = d.state
+  this.age = d.age
+}
+
+Worker.prototype.disconnect = function () {
+  cluster.workers[this.id].disconnect()
+}
+
+Worker.prototype.kill = function () {
+  process.kill(this.pid)
+}
+
 
 function forkListener () {
   cluster.on("fork", function (worker) {

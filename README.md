@@ -91,19 +91,24 @@ The `exec`, `env`, `argv`, and `silent` configs are passed to the
 ## REPL
 
 Cluster-master provides a REPL into the master process so you can inspect
-the state of your cluster. By default the REPL is accessible by a socket 
-written to the root of the directory, but you can override it with the 
-`CLUSTER_MASTER_REPL` environment variable. You can access the REPL with 
-[socat](http://www.dest-unreach.org/socat/) like so:
+the state of your cluster. By default the REPL is accessible by a socket
+written to the root of the directory, but you can override it with the
+`CLUSTER_MASTER_REPL` environment variable. You can access the REPL with
+nc or [socat](http://www.dest-unreach.org/socat/) like so:
 
-```
+
+```bash
+nc -U ./cluster-master-socket
+
+# OR
+
 socat ./cluster-master-socket stdin
 ```
 
-The REPL provides you with access to these objects or functions: 
+The REPL provides you with access to these objects or functions:
 
-* `repl` 
-* `resize(n)` 
+* `repl`
+* `resize(n)`
 * `restart(cb)`
 * `quit()`
 * `cluster`

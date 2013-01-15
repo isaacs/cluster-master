@@ -117,14 +117,35 @@ function setupRepl () {
 
       sock.write('Starting repl #' + sock.id)
       var r = repl.start({
-        prompt: 'ClusterMaster ' + process.pid + ' ' + sock.id + '> ',
+        prompt: 'ClusterMaster (`help` for cmds) ' + process.pid + ' ' + sock.id + '> ',
         input: sock,
         output: sock,
         terminal: true,
         useGlobal: false,
         ignoreUndefined: true
       })
+
+      var helpCommands = [
+        'help        - display these commands',
+        'repl        - access the REPL',
+        'resize(n)   - resize the cluster to `n` workers',
+        'restart(cb) - gracefully restart workers, cb is optional',
+        'quit()      - gracefully stop workers and master',
+        'quitHard()  - forcefully kill workers and master',
+        'cluster     - node.js cluster module',
+        'size        - current cluster size',
+        'connections - number of REPL connections to master',
+        'workers     - current workers',
+        'select(fld) - map of id to field (from workers)',
+        'pids        - map of id to pids',
+        'ages        - map of id to worker ages',
+        'states      - map of id to worker states',
+        'debug(a1)   - output `a1` to stdout and all REPLs',
+        'sock        - this REPL socket'
+      ]
+
       var context = {
+        help: helpCommands,
         repl: r,
         resize: resize,
         restart: restart,

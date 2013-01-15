@@ -108,17 +108,20 @@ socat ./cluster-master-socket stdin
 
 The REPL provides you with access to these objects or functions:
 
-* `repl`
-* `resize(n)`
-* `restart(cb)`
-* `quit()`
-* `cluster`
-* `size`
-* `connections`
-* `workers`
-* `select(pid)`
-* `pids`
-* `ages`
-* `states`
-* `debug`
-* `sock`
+* `help`        - display these commands
+* `repl`        - access the REPL
+* `resize(n)`   - resize the cluster to `n` workers
+* `restart(cb)` - gracefully restart workers, cb is optional
+* `quit()`      - gracefully stop workers and master
+* `quitHard()`  - forcefully kill workers and master
+* `cluster`     - node.js cluster module
+* `size`        - current cluster size
+* `connections` - number of REPL connections to master
+* `workers`     - current workers
+* `select(fld)` - map of id to `field` (from workers)
+* `pids`        - map of id to pids
+* `ages`        - map of id to worker ages
+* `states`      - map of id to worker states
+* `debug(a1)`   - output `a1` to stdout and all REPLs
+* `sock`        - this REPL socket'
+

@@ -12,6 +12,8 @@ var cluster = require("cluster")
 , net = require('net')
 , fs = require('fs')
 , util = require('util')
+, stopTimeout = 5000  // default time (ms) to wait for stop before kill
+, skepticTimeout = 2000  // default time (ms) to live before stopping old
 
 exports = module.exports = clusterMaster
 exports.restart = restart
@@ -55,6 +57,9 @@ function clusterMaster (config) {
   cluster._clusterMaster = module.exports
 
   onmessage = config.onMessage || config.onmessage
+
+  if (config.stopTimeout) stopTimeout = config.stopTimeout
+  if (config.skepticTimeout) skepticTimeout = config.skepticTimeout
 
   clusterSize = config.size || os.cpus().length
 
@@ -246,7 +251,7 @@ function forkListener () {
       disconnectTimer = setTimeout(function () {
         debug("Worker %j, forcefully killing", id)
         worker.process.kill("SIGKILL")
-      }, 5000)
+      }, stopTimeout)
     })
   })
 }
@@ -312,7 +317,7 @@ function restart (cb) {
             worker.disconnect()
           }
           graceful()
-        }, 2000)
+        }, skepticTimeout)
         newbie.on('exit', skeptic)
         function skeptic () {
           debug('New worker died quickly. Aborting restart.')

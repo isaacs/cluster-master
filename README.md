@@ -88,4 +88,10 @@ The `exec`, `env`, `argv`, and `silent` configs are passed to the
 * `onMessage` - Method that gets called when workers send a message to
   the parent.  Called in the context of the worker, so you can reply by
   looking at `this`.
+* `stopTimeout` - Time in milliseconds to wait for worker to stop before
+  forcefully killing the process during restart or resize, default 5000
+  (5 seconds)
+* `skepticTimeout` - Time in milliseconds to wait for worker to live
+  before shutting previous worker down during restart, default 2000
+  (2 seconds)
 

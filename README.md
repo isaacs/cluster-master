@@ -71,6 +71,15 @@ Gracefully shut down the worker nodes and then process.exit(0).
 
 Forcibly shut down the worker nodes and then process.exit(1).
 
+### clusterMaster.debug(arg1, arg2, ...)
+
+Arguments passed to debug are formatted with util.format and output
+to stdout and any REPL's.
+
+```javascript
+clusterMaster.debug('The number one is %s', 1);
+```
+
 ## Configs
 
 The `exec`, `env`, `argv`, and `silent` configs are passed to the

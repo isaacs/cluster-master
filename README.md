@@ -87,6 +87,16 @@ The `exec`, `env`, `argv`, and `silent` configs are passed to the
 * `onMessage` - Method that gets called when workers send a message to
   the parent.  Called in the context of the worker, so you can reply by
   looking at `this`.
+* `repl` - where to have REPL listen, defaults to `env.CLUSTER_MASTER_REPL` || 'cluster-master-socket'
+  * if `repl` is null or false - REPL is disabled and will not be started
+  * if `repl` is string path - REPL will listen on unix domain socket to this path
+  * if `repl` is an integer port - REPL will listen on TCP 0.0.0.0:port
+  * if `repl` is an object with `address` and `port`, then REPL will listen on TCP address:PORT
+
+Note: be careful when using TCP for your REPL since anyone on the
+network can connect to your REPL (no security). So either disable
+the REPL or use a unix domain socket which requires local access
+(or ssh access) to the server.
 
 ## REPL
 

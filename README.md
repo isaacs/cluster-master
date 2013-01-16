@@ -94,6 +94,15 @@ The `exec`, `env`, `argv`, and `silent` configs are passed to the
   * if `repl` is an integer port - REPL will listen on TCP 0.0.0.0:port
   * if `repl` is an object with `address` and `port`, then REPL will listen on TCP address:PORT
 
+Examples of configuring `repl`
+
+```javascript
+var config = { repl: false }                       // disable REPL
+var config = { repl: '/tmp/cluster-master-sock' }  // unix domain socket
+var config = { repl: 3001 }                        // tcp socket 0.0.0.0:3001
+var config = { repl: { address: '127.0.0.1', port: 3002 }}  // tcp 127.0.0.1:3002
+```
+
 Note: be careful when using TCP for your REPL since anyone on the
 network can connect to your REPL (no security). So either disable
 the REPL or use a unix domain socket which requires local access

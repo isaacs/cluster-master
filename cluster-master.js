@@ -10,14 +10,17 @@ var cluster = require("cluster")
 , onmessage
 , repl = require('repl')
 , net = require('net')
+, EventEmitter = require('events').EventEmitter
+, masterEmitter = new EventEmitter()
 , fs = require('fs')
 , util = require('util')
 
 exports = module.exports = clusterMaster
-exports.restart = restart
-exports.resize = resize
-exports.quitHard = quitHard
-exports.quit = quit
+exports.emitter = emitter
+exports.restart = emitAndRestart
+exports.resize = emitAndResize
+exports.quitHard = emitAndQuitHard
+exports.quit = emitAndQuit
 
 var debugStreams = {}
 function debug () {
@@ -77,6 +80,8 @@ function clusterMaster (config) {
   // now make it the right size
   debug('resize and then setup repl')
   resize(setupRepl)
+
+  return masterEmitter
 }
 
 function select (field) {
@@ -126,9 +131,10 @@ function setupRepl () {
       })
       var context = {
         repl: r,
-        resize: resize,
-        restart: restart,
-        quit: quit,
+        resize: emitAndResize,
+        restart: emitAndRestart,
+        quit: emitAndQuit,
+        quitHard: emitAndQuitHard,
         cluster: cluster,
         get size () {
           return clusterSize
@@ -412,9 +418,9 @@ function quit () {
 
 function setupSignals () {
   try {
-    process.on("SIGHUP", restart)
-    process.on("SIGINT", quit)
-    process.on("SIGKILL", quitHard)
+    process.on("SIGHUP", emitAndRestart)
+    process.on("SIGINT", emitAndQuit)
+    process.on("SIGKILL", emitAndQuitHard)
   } catch (e) {
     // Must be on Windows, waaa-waaah.
   }
@@ -422,4 +428,41 @@ function setupSignals () {
   process.on("exit", function () {
     if (!quitting) quitHard()
   })
+}
+
+function emitter() {
+  return masterEmitter
+}
+
+function emitAndResize(n) {
+  masterEmitter.emit('resize', n)
+  process.nextTick(function () { resize(n) })
+}
+
+function emitAndRestart(cb) {
+  if (restarting) {
+    debug("Already restarting.  Cannot restart yet.")
+    return
+  }
+  var currentWorkers = Object.keys(cluster.workers).reduce(function (accum, k) {
+    accum[k] = { pid: cluster.workers[k].pid };
+    return accum;
+  }, {});
+  masterEmitter.emit('restart', currentWorkers);
+  process.nextTick(function () {
+    restart(function () {
+      masterEmitter.emit('restartComplete');
+      if (cb) cb();
+    });
+  });
+}
+
+function emitAndQuit() {
+  masterEmitter.emit('quit')
+  process.nextTick(function () { quit() })
+}
+
+function emitAndQuitHard() {
+  masterEmitter.emit('quitHard')
+  process.nextTick(function () { quitHard() })
 }

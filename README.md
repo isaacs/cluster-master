@@ -49,6 +49,13 @@ clusterMaster.quit()
 
 // not so graceful shutdown
 clusterMaster.quitHard()
+
+// listen to events to additional cleanup or shutdown
+clusterMaster.emitter()
+  .on('resize', function (clusterSize) { })
+  .on('restart', function () { })
+  .on('quit', function () { })
+  .on('quitHard', function () { });
 ```
 
 ## Methods
@@ -57,19 +64,29 @@ clusterMaster.quitHard()
 
 Set the cluster size to `n`.  This will disconnect extra nodes and/or
 spin up new nodes, as needed.  Done by default on restarts.
+Fires `resize` event with new clusterSize just before performing the
+resize.
 
 ### clusterMaster.restart(cb)
 
 One by one, shut down nodes and spin up new ones.  Callback is called
-when finished.
+when finished. Fires `restart` event just before performing restart.
 
 ### clusterMaster.quit()
 
 Gracefully shut down the worker nodes and then process.exit(0).
+Fires `quit` event just before performing the shutdown.
 
 ### clusterMaster.quitHard()
 
 Forcibly shut down the worker nodes and then process.exit(1).
+Fires `quitHard` event just before performing hard shut down.
+
+### clusterMaster.emitter()
+
+Retrieve the clusterMaster EventEmitter to be able to listen
+to clusterMaster events. This emitter is also returned from
+the original clusterMaster() constructor.
 
 ## Configs
 
@@ -89,3 +106,14 @@ The `exec`, `env`, `argv`, and `silent` configs are passed to the
   the parent.  Called in the context of the worker, so you can reply by
   looking at `this`.
 
+## Events
+
+clusterMaster emits events on clusterMaster.emitter() when its methods
+are called which allows you to respond and do additional cleanup right
+before the action is carried out.
+
+* `resize` - fired on clusterMaster.resize(n), listener ex: fn(clusterSize)
+* `restart` - fired on clusterMaster.restart(), listener ex: fn(oldWorkers)
+  `restartComplete` - fired when restart is completed
+* `quit` - fired on clusterMaster.quit()
+* `quitHard` - fired on clusterMaster.quitHard()

@@ -440,8 +440,21 @@ function emitAndResize(n) {
 }
 
 function emitAndRestart(cb) {
-  masterEmitter.emit('restart')
-  process.nextTick(function () { restart(cb) });
+  if (restarting) {
+    debug("Already restarting.  Cannot restart yet.")
+    return
+  }
+  var currentWorkers = Object.keys(cluster.workers).reduce(function (accum, k) {
+    accum[k] = { pid: cluster.workers[k].pid };
+    return accum;
+  }, {});
+  masterEmitter.emit('restart', currentWorkers);
+  process.nextTick(function () {
+    restart(function () {
+      masterEmitter.emit('restartComplete');
+      if (cb) cb();
+    });
+  });
 }
 
 function emitAndQuit() {

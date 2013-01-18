@@ -113,6 +113,7 @@ are called which allows you to respond and do additional cleanup right
 before the action is carried out.
 
 * `resize` - fired on clusterMaster.resize(n), listener ex: fn(clusterSize)
-* `restart` - fired on clusterMaster.restart()
+* `restart` - fired on clusterMaster.restart(), listener ex: fn(oldWorkers)
+  `restartComplete` - fired when restart is completed
 * `quit` - fired on clusterMaster.quit()
 * `quitHard` - fired on clusterMaster.quitHard()

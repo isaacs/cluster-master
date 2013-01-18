@@ -260,7 +260,6 @@ function forkListener () {
 function restart (cb) {
   if (restarting) {
     debug("Already restarting.  Cannot restart yet.")
-    if (cb) cb(new Error('already restarting, cannot restart yet'))
     return
   }
 
@@ -443,7 +442,6 @@ function emitAndResize(n) {
 function emitAndRestart(cb) {
   if (restarting) {
     debug("Already restarting.  Cannot restart yet.")
-    if (cb) cb(new Error('already restarting, cannot restart yet'))
     return
   }
   var currentWorkers = Object.keys(cluster.workers).reduce(function (accum, k) {

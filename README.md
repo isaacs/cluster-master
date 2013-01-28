@@ -142,4 +142,5 @@ The REPL provides you with access to these objects or functions:
 * `states`      - map of id to worker states
 * `debug(a1)`   - output `a1` to stdout and all REPLs
 * `sock`        - this REPL socket'
+* `.exit`       - close this connection to the REPL
 

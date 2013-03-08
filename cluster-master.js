@@ -12,6 +12,8 @@ var cluster = require("cluster")
 , net = require('net')
 , fs = require('fs')
 , util = require('util')
+, minRestartAge = 2000
+, danger = false
 
 exports = module.exports = clusterMaster
 exports.restart = restart
@@ -57,6 +59,8 @@ function clusterMaster (config) {
   onmessage = config.onMessage || config.onmessage
 
   clusterSize = config.size || os.cpus().length
+
+  minRestartAge = config.minRestartAge || minRestartAge
 
   env = config.env
 
@@ -227,8 +231,11 @@ function forkListener () {
         debug("Worker %j exited abnormally", id)
         // don't respawn right away if it's a very fast failure.
         // otherwise server crashes are hard to detect from monitors.
-        if (worker.age < 2000) {
-          debug("Worker %j died too quickly, not respawning.", id)
+        if (worker.age < minRestartAge) {
+          debug("Worker %j died too quickly, danger", id)
+          danger = true
+          // still try again in a few seconds, though.
+          setTimeout(resize, 2000)
           return
         }
       } else {
@@ -336,11 +343,35 @@ function restart (cb) {
 
 
 var resizing = false
-function resize (n, cb) {
-  if (typeof n === 'function') cb = n, n = clusterSize
+var resizeCbs = []
+function resize (n, cb_) {
+  if (typeof n === 'function') cb_ = n, n = clusterSize
 
   if (resizing) {
-    return cb && cb()
+    if (cb_)
+      resizeCbs.push(cb_)
+    return
+  }
+
+  function cb() {
+    resizing = false
+    var q = resizeCbs
+    resizeCbs.length = 0
+    q.forEach(function(c) {
+      c()
+    })
+    if (clusterSize !== Object.keys(cluster.workers)) {
+      if (danger && clusterSize === 0) {
+        // debug('DANGER! something bad has happened')
+        process.exit(1)
+      } else {
+        danger = true
+        // debug('DANGER! wrong number of workers')
+        setTimeout(resize, 1000)
+      }
+    } else {
+      danger = false
+    }
   }
 
   if (n >= 0) clusterSize = n
@@ -348,9 +379,12 @@ function resize (n, cb) {
   , c = current.length
   , req = clusterSize - c
 
+  // avoid angry "listening" listeners
+  cluster.setMaxListeners(clusterSize * 2)
+
   if (c === clusterSize) {
     resizing = false
-    return cb && cb()
+    return cb()
   }
 
   var thenCnt = 0
@@ -361,7 +395,7 @@ function resize (n, cb) {
   function then2 () {
     if (--thenCnt === 0) {
       resizing = false
-      return cb && cb()
+      return cb()
     }
   }
 

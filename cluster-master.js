@@ -111,6 +111,10 @@ function setupRepl () {
   }
 
   function startRepl () {
+    console.error('starting repl on '+socket+'=')
+    process.on('exit', function() {
+      try { fs.unlinkSync(socket) } catch (er) {}
+    })
     var sockId = 0
     net.createServer(function (sock) {
       connections ++
@@ -347,26 +351,28 @@ var resizeCbs = []
 function resize (n, cb_) {
   if (typeof n === 'function') cb_ = n, n = clusterSize
 
-  if (resizing) {
-    if (cb_)
-      resizeCbs.push(cb_)
+  if (cb_)
+    resizeCbs.push(cb_)
+
+  if (resizing)
     return
-  }
 
   function cb() {
+    console.error('done resizing')
+
     resizing = false
-    var q = resizeCbs
+    var q = resizeCbs.slice(0)
     resizeCbs.length = 0
     q.forEach(function(c) {
       c()
     })
-    if (clusterSize !== Object.keys(cluster.workers)) {
+    if (clusterSize !== Object.keys(cluster.workers).length) {
       if (danger && clusterSize === 0) {
-        // debug('DANGER! something bad has happened')
+        debug('DANGER! something bad has happened')
         process.exit(1)
       } else {
         danger = true
-        // debug('DANGER! wrong number of workers')
+        debug('DANGER! wrong number of workers')
         setTimeout(resize, 1000)
       }
     } else {

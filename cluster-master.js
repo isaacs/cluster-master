@@ -58,7 +58,7 @@ function clusterMaster (config) {
 
   onmessage = config.onMessage || config.onmessage
 
-  clusterSize = config.size || os.cpus().length
+  clusterSize = config.size || +process.env.CLUSTER_MASTER_SIZE || os.cpus().length
 
   minRestartAge = config.minRestartAge || minRestartAge
 

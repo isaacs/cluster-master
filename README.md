@@ -84,7 +84,6 @@ The `exec`, `env`, `argv`, and `silent` configs are passed to the
 * `signals` - Boolean, default=true.  Set up listeners to:
   * `SIGHUP` - restart
   * `SIGINT` - quit
-  * `SIGKILL` - quitHard. This signal **cannot** be caught by Node.
 * `onMessage` - Method that gets called when workers send a message to
   the parent.  Called in the context of the worker, so you can reply by
   looking at `this`.

@@ -454,7 +454,6 @@ function setupSignals () {
   try {
     process.on("SIGHUP", restart)
     process.on("SIGINT", quit)
-    process.on("SIGKILL", quitHard)
   } catch (e) {
     // Must be on Windows, waaa-waaah.
   }

@@ -17,7 +17,6 @@ var cluster = require("cluster")
 , danger = false
 , d = require("debug")("cluster-master")
 
-
 exports = module.exports = clusterMaster
 exports.restart = restart
 exports.resize = resize

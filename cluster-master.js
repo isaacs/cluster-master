@@ -15,6 +15,8 @@ var cluster = require("cluster")
 , util = require('util')
 , minRestartAge = 2000
 , danger = false
+, d = require("debug")("cluster-master")
+
 
 exports = module.exports = clusterMaster
 exports.restart = restart
@@ -24,7 +26,7 @@ exports.quit = quit
 
 var debugStreams = {}
 function debug () {
-  console.error.apply(console, arguments)
+  d.apply(d, arguments)
 
   var msg = util.format.apply(util, arguments)
   Object.keys(debugStreams).forEach(function (s) {
@@ -122,7 +124,7 @@ function setupRepl () {
   }
 
   function startRepl () {
-    console.error('starting repl on '+socket+'=')
+    debug('starting repl on '+socket+'=')
     process.on('exit', function() {
       try { fs.unlinkSync(socket) } catch (er) {}
     })
@@ -400,7 +402,7 @@ function resize (n, cb_) {
     return
 
   function cb() {
-    console.error('done resizing')
+    debug('done resizing')
 
     resizing = false
     var q = resizeCbs.slice(0)

@@ -58,10 +58,11 @@ clusterMaster.quitHard()
 Set the cluster size to `n`.  This will disconnect extra nodes and/or
 spin up new nodes, as needed.  Done by default on restarts.
 
-### clusterMaster.restart(cb)
+### clusterMaster.restart(env, cb)
 
-One by one, shut down nodes and spin up new ones.  Callback is called
-when finished.
+One by one, shut down nodes and spin up new ones.  New workers will
+receive `env`, instead of the envs passed in config.  Callback is called
+when finished. `env` and `cb` are optional.
 
 ### clusterMaster.quit()
 
@@ -129,7 +130,7 @@ The REPL provides you with access to these objects or functions:
 * `help`        - display these commands
 * `repl`        - access the REPL
 * `resize(n)`   - resize the cluster to `n` workers
-* `restart(cb)` - gracefully restart workers, cb is optional
+* `restart(env, cb)` - gracefully restart workers, env and cb are optional
 * `stop()`      - gracefully stop workers and master
 * `kill()`      - forcefully kill workers and master
 * `cluster`     - node.js cluster module

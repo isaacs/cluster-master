@@ -148,7 +148,7 @@ function setupRepl () {
         'help        - display these commands',
         'repl        - access the REPL',
         'resize(n)   - resize the cluster to `n` workers',
-        'restart(cb) - gracefully restart workers, cb is optional',
+        'restart(env, cb) - gracefully restart workers, env and cb are optional',
         'stop()      - gracefully stop workers and master',
         'kill()      - forcefully kill workers and master',
         'cluster     - node.js cluster module',
@@ -304,13 +304,18 @@ function forkListener () {
   })
 }
 
-function restart (cb) {
+function restart (env_, cb) {
   if (restarting) {
     debug("Already restarting.  Cannot restart yet.")
     return
   }
 
   restarting = true
+
+  if (arguments.length == 1 && env_ && {}.toString.call(env_) == '[object Function]')
+    cb = env_, env_ = undefined
+
+  if (env_) env = env_
 
   // graceful restart.
   // all the existing workers get killed, and this

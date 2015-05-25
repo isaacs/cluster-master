@@ -88,7 +88,13 @@ function clusterMaster (config) {
 
 function select (field) {
   return Object.keys(cluster.workers).map(function (k) {
-    return [k, cluster.workers[k][field]]
+    // the field may have a . in it.  We can use this
+    // for depth. e.g. 'process.pid'
+    return [k, field
+                .split('.')
+                .reduce(function(get, f) {
+                  return get[f]
+                }, cluster.workers[k])]
   }).reduce(function (set, kv) {
     set[kv[0]] = kv[1]
     return set

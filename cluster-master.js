@@ -210,7 +210,7 @@ function setupRepl () {
 
       sock.repl = r
 
-      r.on('end', function () {
+      r.on('exit', function () {
         connections --
         replEnded = true
         if (!ended) sock.end()

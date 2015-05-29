@@ -17,6 +17,7 @@ var cluster = require("cluster")
 , danger = false
 
 exports = module.exports = clusterMaster
+exports.debug = debug
 exports.restart = restart
 exports.resize = resize
 exports.quitHard = quitHard

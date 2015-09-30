@@ -296,12 +296,10 @@ function forkListener () {
     worker.on("disconnect", function () {
       debug("Worker %j disconnect", id)
       // give it 1 second to shut down gracefully, or kill
-      if(config.killWaitTime !== 0) {
-        disconnectTimer = setTimeout(function () {
-          debug("Worker %j, forcefully killing", id)
-          worker.process.kill("SIGKILL")
-        }, config.killWaitTime || 5000)
-      }
+      disconnectTimer = setTimeout(function () {
+        debug("Worker %j, forcefully killing", id)
+        worker.process.kill("SIGKILL")
+      }, config.killWaitTime || 5000)
     })
   })
 }

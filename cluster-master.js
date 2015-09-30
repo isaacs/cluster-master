@@ -299,7 +299,7 @@ function forkListener () {
       disconnectTimer = setTimeout(function () {
         debug("Worker %j, forcefully killing", id)
         worker.process.kill("SIGKILL")
-      }, 5000)
+      }, config.killWaitTime || 5000)
     })
   })
 }

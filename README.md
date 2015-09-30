@@ -87,6 +87,7 @@ The `exec`, `env`, `argv`, and `silent` configs are passed to the
 * `onMessage` - Method that gets called when workers send a message to
   the parent.  Called in the context of the worker, so you can reply by
   looking at `this`.
+- `killWaitTime` - The time to wait before force-killing a worker.
 * `repl` - where to have REPL listen, defaults to `env.CLUSTER_MASTER_REPL` || 'cluster-master-socket'
   * if `repl` is null or false - REPL is disabled and will not be started
   * if `repl` is string path - REPL will listen on unix domain socket to this path

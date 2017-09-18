@@ -22,9 +22,18 @@ exports.resize = resize
 exports.quitHard = quitHard
 exports.quit = quit
 
+var logger = {
+  warn: console.warn,
+  error: console.error
+}
+
+exports.setLogger = function(_logger) {
+  logger = _logger;
+}
+
 var debugStreams = {}
 function debug () {
-  console.error.apply(console, arguments)
+  logger.error.apply(logger, arguments)
 
   var msg = util.format.apply(util, arguments)
   Object.keys(debugStreams).forEach(function (s) {
@@ -122,7 +131,7 @@ function setupRepl () {
   }
 
   function startRepl () {
-    console.error('starting repl on '+socket+'=')
+    logger.error('starting repl on '+socket+'=')
     process.on('exit', function() {
       try { fs.unlinkSync(socket) } catch (er) {}
     })
@@ -400,7 +409,7 @@ function resize (n, cb_) {
     return
 
   function cb() {
-    console.error('done resizing')
+    logger.error('done resizing')
 
     resizing = false
     var q = resizeCbs.slice(0)

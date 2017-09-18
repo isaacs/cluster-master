@@ -282,7 +282,7 @@ function forkListener () {
     worker.on("exit", function () {
       clearTimeout(disconnectTimer)
 
-      if (!worker.suicide) {
+      if (!worker.exitedAfterDisconnect) {
         debug("Worker %j exited abnormally", id)
         // don't respawn right away if it's a very fast failure.
         // otherwise server crashes are hard to detect from monitors.

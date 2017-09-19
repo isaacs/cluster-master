@@ -275,7 +275,7 @@ function forkListener () {
     }, enumerable: true, configurable: true })
     worker.pid = worker.process.pid
     var id = worker.id
-    debug("Worker %j setting up", id)
+    debug('Worker '+id+' setting up')
     if (onmessage) worker.on("message", onmessage)
     var disconnectTimer
 

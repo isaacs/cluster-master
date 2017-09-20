@@ -32,9 +32,7 @@ clusterMaster({ exec: "worker.js" // script to run
               , silent: true
               , signals: false
               , onMessage: function (msg) {
-                  console.error("Message from %s %j"
-                               , this.uniqueID
-                               , msg)
+                  console.error("Message from "+this.uniqueID+" "+msg)
                 }
               })
 

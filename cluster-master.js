@@ -283,18 +283,18 @@ function forkListener () {
       clearTimeout(disconnectTimer)
 
       if (!worker.exitedAfterDisconnect) {
-        debug("Worker %j exited abnormally", id)
+        debug("Worker "+id+" exited abnormally")
         // don't respawn right away if it's a very fast failure.
         // otherwise server crashes are hard to detect from monitors.
         if (worker.age < minRestartAge) {
-          debug("Worker %j died too quickly, danger", id)
+          debug("Worker "+id+" died too quickly, danger")
           danger = true
           // still try again in a few seconds, though.
           setTimeout(resize, 2000)
           return
         }
       } else {
-        debug("Worker %j exited", id)
+        debug("Worker "+id+" exited")
       }
 
       if (Object.keys(cluster.workers).length < clusterSize && !resizing) {
@@ -303,10 +303,10 @@ function forkListener () {
     })
 
     worker.on("disconnect", function () {
-      debug("Worker %j disconnect", id)
+      debug("Worker "+id+" disconnect")
       // give it 1 second to shut down gracefully, or kill
       disconnectTimer = setTimeout(function () {
-        debug("Worker %j, forcefully killing", id)
+        debug("Worker "+id+", forcefully killing")
         worker.process.kill("SIGKILL")
       }, 5000)
     })
@@ -333,8 +333,7 @@ function restart (cb) {
 
   // if we're resizing, then just kill off a few.
   if (reqs !== 0) {
-    debug('resize %d -> %d, change = %d',
-                  current.length, clusterSize, reqs)
+    debug('resize '+current.length+' -> '+clusterSize+', change = '+reqs)
 
     return resize(clusterSize, function () {
       debug('resize cb')
@@ -347,7 +346,7 @@ function restart (cb) {
   // new one to spawn before moving on.
   graceful()
   function graceful () {
-    debug("graceful %d of %d", i, length)
+    debug("graceful "+i+" of "+length)
     if (i >= current.length) {
       debug("graceful completion")
       restarting = false

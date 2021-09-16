@@ -15,6 +15,7 @@ var cluster = require("cluster")
 , util = require('util')
 , minRestartAge = 2000
 , danger = false
+, gracefulShutdownDelayMs = 5000
 
 exports = module.exports = clusterMaster
 exports.restart = restart
@@ -73,6 +74,8 @@ function clusterMaster (config) {
   clusterSize = config.size || os.cpus().length
 
   minRestartAge = config.minRestartAge || minRestartAge
+
+  gracefulShutdownDelayMs = config.gracefulShutdownDelayMs || gracefulShutdownDelayMs
 
   env = config.env
 
@@ -308,7 +311,7 @@ function forkListener () {
       disconnectTimer = setTimeout(function () {
         debug("Worker "+id+", forcefully killing")
         worker.process.kill("SIGKILL")
-      }, 5000)
+      }, gracefulShutdownDelayMs)
     })
   })
 }
@@ -479,7 +482,9 @@ function quitHard () {
 
 
 
-function quit () {
+function quit (code) {
+  code = code || 0
+
   if (quitting) {
     debug("Forceful shutdown")
     // last ditch effort to force-kill all workers.
@@ -495,7 +500,7 @@ function quit () {
   quitting = true
   restart(function () {
     debug("Graceful shutdown successful")
-    process.exit(0)
+    process.exit(code)
   })
 }
 
@@ -504,6 +509,7 @@ function setupSignals () {
   try {
     process.on("SIGHUP", restart)
     process.on("SIGINT", quit)
+    process.on("SIGTERM", quit)
   } catch (e) {
     // Must be on Windows, waaa-waaah.
   }

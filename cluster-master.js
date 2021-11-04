@@ -15,6 +15,7 @@ var cluster = require("cluster")
 , util = require('util')
 , minRestartAge = 2000
 , danger = false
+, custom_disconnect = null
 , gracefulShutdownDelayMs = 5000
 
 exports = module.exports = clusterMaster
@@ -262,7 +263,11 @@ function Worker (d) {
 }
 
 Worker.prototype.disconnect = function () {
-  cluster.workers[this.id].disconnect()
+  if (custom_disconnect) {
+    cluster.workers[this.id].send(custom_disconnect)
+  } else {
+    cluster.workers[this.id].disconnect()
+  }
 }
 
 Worker.prototype.kill = function () {
@@ -303,6 +308,15 @@ function forkListener () {
       if (Object.keys(cluster.workers).length < clusterSize && !resizing) {
         resize()
       }
+    })
+
+    worker.on(custom_disconnect, function () {
+      debug("Worker "+id+custom_disconnect")
+      // give it 1 second to shut down gracefully, or kill
+      disconnectTimer = setTimeout(function () {
+        debug("Worker "+id+", forcefully killing")
+        worker.process.kill("SIGKILL")
+      }, gracefulShutdownDelayMs)
     })
 
     worker.on("disconnect", function () {
